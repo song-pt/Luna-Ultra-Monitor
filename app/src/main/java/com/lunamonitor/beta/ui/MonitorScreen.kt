@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -101,42 +104,53 @@ private fun MonitorScreen(state: MonitorUiState, actions: MonitorViewModel) {
 
         GuideOverlay(state)
 
-        if (state.connection != ConnectionState.STREAMING) EmptyMonitorState(state, actions)
+        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+            if (state.connection != ConnectionState.STREAMING) EmptyMonitorState(state, actions)
 
-        if (!state.cleanView) {
-            TopStatusBar(state)
-            BottomToolBar(state, actions)
-            state.selectedSection?.let { ToolPanel(it, state, actions) }
-            if (state.selectedSection == null) CameraControlDrawer(state, actions)
-        } else {
-            CleanViewExit(actions)
+            if (!state.cleanView) {
+                TopStatusBar(state)
+                BottomToolBar(state, actions)
+                state.selectedSection?.let { ToolPanel(it, state, actions) }
+                if (state.selectedSection == null) CameraControlDrawer(state, actions)
+            } else {
+                CleanViewExit(actions)
+            }
+
+            state.thermalSuggestion?.let { ThermalSuggestion(it, state.language, actions) }
+            state.error?.let { ErrorBubble(it, state.language, actions) }
         }
-
-        state.thermalSuggestion?.let { ThermalSuggestion(it, state.language, actions) }
-        state.error?.let { ErrorBubble(it, state.language, actions) }
     }
 }
 
 @Composable
 private fun TopStatusBar(state: MonitorUiState) {
-    Row(
-        Modifier.fillMaxWidth().background(Color(0xB8080909)).padding(horizontal = 16.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("LUNA MONITOR", fontSize = 12.sp, letterSpacing = 1.4.sp)
-        Spacer(Modifier.width(14.dp))
-        StatusDot(state.connection == ConnectionState.STREAMING)
-        Spacer(Modifier.width(7.dp))
-        Text(UiText.runtime(state.language, state.connectionMessage), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-        Spacer(Modifier.weight(1f))
-        if (state.connection == ConnectionState.STREAMING) {
-            Text("${state.streamStats.width}×${state.streamStats.height}", fontSize = 11.sp)
-            Spacer(Modifier.width(14.dp))
-            Text(UiText.runtime(state.language, state.streamStats.codec), fontSize = 11.sp)
-            Spacer(Modifier.width(14.dp))
-            Text("%.1f fps".format(state.streamStats.fps), fontSize = 11.sp)
-            Spacer(Modifier.width(14.dp))
-            Text("${state.streamStats.bitrateKbps} kb/s", fontSize = 11.sp)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val widthDp = maxWidth.value
+        Row(
+            Modifier.fillMaxWidth().background(Color(0xB8080909)).padding(horizontal = if (MonitorLayoutPolicy.compactToolbar(widthDp)) 8.dp else 16.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (!MonitorLayoutPolicy.hideBrand(widthDp)) {
+                Text("LUNA MONITOR", fontSize = 12.sp, letterSpacing = 1.4.sp, maxLines = 1)
+                Spacer(Modifier.width(14.dp))
+            }
+            StatusDot(state.connection == ConnectionState.STREAMING)
+            Spacer(Modifier.width(7.dp))
+            Text(UiText.runtime(state.language, state.connectionMessage), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, maxLines = 1)
+            Spacer(Modifier.weight(1f))
+            if (state.connection == ConnectionState.STREAMING) {
+                if (MonitorLayoutPolicy.showFullStats(widthDp)) {
+                    Text("${state.streamStats.width}×${state.streamStats.height}", fontSize = 11.sp, maxLines = 1)
+                    Spacer(Modifier.width(12.dp))
+                    Text(UiText.runtime(state.language, state.streamStats.codec), fontSize = 11.sp, maxLines = 1)
+                    Spacer(Modifier.width(12.dp))
+                }
+                Text("%.1f fps".format(state.streamStats.fps), fontSize = 11.sp, maxLines = 1)
+                if (MonitorLayoutPolicy.showBitrate(widthDp)) {
+                    Spacer(Modifier.width(12.dp))
+                    Text("${state.streamStats.bitrateKbps} kb/s", fontSize = 11.sp, maxLines = 1)
+                }
+            }
         }
     }
 }
@@ -179,18 +193,21 @@ private fun EmptyMonitorState(state: MonitorUiState, actions: MonitorViewModel) 
 
 @Composable
 private fun BoxScope.BottomToolBar(state: MonitorUiState, actions: MonitorViewModel) {
-    Row(
-        Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp)
-            .background(Color(0xE6111313), RoundedCornerShape(14.dp)).border(1.dp, Color(0xFF2E3130), RoundedCornerShape(14.dp))
-            .padding(5.dp),
-    ) {
-        listOf(
-            Triple(ToolSection.COLOR, "color", MonitorGlyph.PALETTE), Triple(ToolSection.LUT, "lut", MonitorGlyph.LUT),
-            Triple(ToolSection.EXPOSURE, "exposure", MonitorGlyph.SUN), Triple(ToolSection.FOCUS, "focus", MonitorGlyph.MOUNTAIN),
-            Triple(ToolSection.COMPOSITION, "composition", MonitorGlyph.CROP), Triple(ToolSection.DISPLAY, "display", MonitorGlyph.DISPLAY),
-            Triple(ToolSection.CAMERA_SETTINGS, "parameters", MonitorGlyph.SLIDERS),
-        ).forEach { (section, label, glyph) ->
-            IconLabelButton(UiText.get(state.language, label), glyph, state.selectedSection == section, { actions.selectSection(section) }, Modifier.weight(1f))
+    BoxWithConstraints(Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
+        val compact = MonitorLayoutPolicy.compactToolbar(maxWidth.value)
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = if (compact) 4.dp else 8.dp, vertical = if (compact) 6.dp else 12.dp)
+                .background(Color(0xE6111313), RoundedCornerShape(14.dp)).border(1.dp, Color(0xFF2E3130), RoundedCornerShape(14.dp))
+                .padding(if (compact) 3.dp else 5.dp),
+        ) {
+            listOf(
+                Triple(ToolSection.COLOR, "color", MonitorGlyph.PALETTE), Triple(ToolSection.LUT, "lut", MonitorGlyph.LUT),
+                Triple(ToolSection.EXPOSURE, "exposure", MonitorGlyph.SUN), Triple(ToolSection.FOCUS, "focus", MonitorGlyph.MOUNTAIN),
+                Triple(ToolSection.COMPOSITION, "composition", MonitorGlyph.CROP), Triple(ToolSection.DISPLAY, "display", MonitorGlyph.DISPLAY),
+                Triple(ToolSection.CAMERA_SETTINGS, "parameters", MonitorGlyph.SLIDERS),
+            ).forEach { (section, label, glyph) ->
+                IconLabelButton(UiText.get(state.language, label), glyph, state.selectedSection == section, { actions.selectSection(section) }, Modifier.weight(1f), compact)
+            }
         }
     }
 }
@@ -198,17 +215,17 @@ private fun BoxScope.BottomToolBar(state: MonitorUiState, actions: MonitorViewMo
 private enum class MonitorGlyph { CAMERA, PALETTE, LUT, SUN, MOUNTAIN, CROP, DISPLAY, SLIDERS }
 
 @Composable
-private fun IconLabelButton(label: String, glyph: MonitorGlyph, selected: Boolean, action: () -> Unit, modifier: Modifier = Modifier) {
+private fun IconLabelButton(label: String, glyph: MonitorGlyph, selected: Boolean, action: () -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
     val tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier.clickable(onClick = action)
             .background(if (selected) Color(0xFF2B2E2D) else Color.Transparent, RoundedCornerShape(10.dp))
-            .padding(horizontal = 2.dp, vertical = 6.dp),
+            .padding(horizontal = 1.dp, vertical = if (compact) 3.dp else 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        LineGlyph(glyph, tint, Modifier.size(23.dp))
-        Spacer(Modifier.height(2.dp))
-        Text(label, color = tint, fontSize = 9.sp, lineHeight = 10.sp)
+        LineGlyph(glyph, tint, Modifier.size(if (compact) 19.dp else 23.dp))
+        Spacer(Modifier.height(if (compact) 1.dp else 2.dp))
+        Text(label, color = tint, fontSize = if (compact) 8.sp else 9.sp, lineHeight = 10.sp, maxLines = 1)
     }
 }
 
@@ -264,20 +281,21 @@ private fun LineGlyph(glyph: MonitorGlyph, tint: Color, modifier: Modifier = Mod
 
 @Composable
 private fun BoxScope.ToolPanel(section: ToolSection, state: MonitorUiState, actions: MonitorViewModel) {
-    Surface(
-        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp, bottom = 62.dp).requiredWidth(310.dp).fillMaxHeight(0.78f),
-        color = Color(0xF2111313), contentColor = Color(0xFFE9EAE6), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFF303332)),
-    ) {
-        Column(Modifier.padding(16.dp)) {
+    BoxWithConstraints(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = 48.dp, bottom = 68.dp)) {
+        Surface(
+            modifier = Modifier.align(Alignment.CenterEnd).width(MonitorLayoutPolicy.panelWidth(maxWidth.value).dp).fillMaxHeight(),
+            color = Color(0xF2111313), contentColor = Color(0xFFE9EAE6), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFF303332)),
+        ) {
+          Column(Modifier.padding(if (MonitorLayoutPolicy.compactHeight(maxHeight.value)) 10.dp else 16.dp)) {
             Text(sectionTitle(section, state.language), fontSize = 15.sp, color = Color(0xFFE9EAE6))
             Text(sectionSubtitle(section, state.language), color = Color(0xFFB8BCB8), fontSize = 11.sp)
-            Spacer(Modifier.height(12.dp)); HorizontalDivider(color = Color(0xFF2B2D2D)); Spacer(Modifier.height(10.dp))
-            when (section) {
+            Spacer(Modifier.height(8.dp)); HorizontalDivider(color = Color(0xFF2B2D2D)); Spacer(Modifier.height(8.dp))
+            Box(Modifier.weight(1f).fillMaxWidth()) { when (section) {
                 ToolSection.COLOR -> ColorPanel(state.adjustments, state.language, actions::setAdjustments)
                 ToolSection.LUT -> LutPanel(state, actions)
                 ToolSection.EXPOSURE -> ToggleList(listOf(UiText.get(state.language,"zebra") to state.zebra, UiText.get(state.language,"falseColor") to state.falseColor), listOf(actions::toggleZebra, actions::toggleFalseColor))
                 ToolSection.FOCUS -> ToggleList(listOf(UiText.get(state.language,"peaking") to state.peaking), listOf(actions::togglePeaking))
-                ToolSection.COMPOSITION -> Column {
+                ToolSection.COMPOSITION -> Column(Modifier.verticalScroll(rememberScrollState())) {
                     ToggleList(
                         listOf(UiText.get(state.language,"thirds") to state.showThirds, UiText.get(state.language,"centerMark") to state.showCenter, UiText.get(state.language,"safeArea") to state.showSafeArea),
                         listOf(actions::toggleThirds, actions::toggleCenter, actions::toggleSafeArea),
@@ -287,7 +305,8 @@ private fun BoxScope.ToolPanel(section: ToolSection, state: MonitorUiState, acti
                 }
                 ToolSection.DISPLAY -> DisplayPanel(state, actions)
                 ToolSection.CAMERA_SETTINGS -> CameraSettingsPanel(state, actions)
-            }
+            } }
+          }
         }
     }
 }
@@ -347,7 +366,7 @@ private fun CameraSettingsPanel(state: MonitorUiState, actions: MonitorViewModel
             modifier = Modifier.padding(top = 5.dp, bottom = 9.dp),
         )
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Column(Modifier.weight(.42f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Column(Modifier.weight(.42f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text(UiText.get(state.language, "resolution"), fontSize = 11.sp, color = Color.White)
                 sizes.forEach { size ->
                     ParameterChoice(size, state.selectedVideoSize == size, true) { actions.selectVideoSize(size) }
@@ -515,7 +534,7 @@ private fun GuideStyleRow(
 
 @Composable
 private fun DisplayPanel(state: MonitorUiState, actions: MonitorViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
             ScaleMode.FIT to UiText.get(state.language,"fit"), ScaleMode.FILL_CROP to UiText.get(state.language,"cropFill"),
             ScaleMode.STRETCH to UiText.get(state.language,"stretch"), ScaleMode.PIXEL_TO_PIXEL to UiText.get(state.language,"pixel"),
@@ -543,8 +562,9 @@ private fun BoxScope.CameraControlDrawer(state: MonitorUiState, actions: Monitor
     var dragDistance by remember(state.controlsSide) { mutableFloatStateOf(0f) }
     val edgePadding = if (right) Modifier.padding(end = 12.dp) else Modifier.padding(start = 12.dp)
     Column(
-        Modifier.align(if (right) Alignment.CenterEnd else Alignment.CenterStart).then(edgePadding),
+        Modifier.align(if (right) Alignment.CenterEnd else Alignment.CenterStart).fillMaxHeight().padding(top = 48.dp, bottom = 68.dp).then(edgePadding),
         horizontalAlignment = if (right) Alignment.End else Alignment.Start,
+        verticalArrangement = Arrangement.Center,
     ) {
         Box(
             Modifier.pointerInput(state.controlsExpanded) {
@@ -562,7 +582,7 @@ private fun BoxScope.CameraControlDrawer(state: MonitorUiState, actions: Monitor
         if (state.controlsExpanded) {
             Spacer(Modifier.height(6.dp))
             Surface(
-                modifier = Modifier.fillMaxHeight(0.86f),
+                modifier = Modifier.weight(1f),
                 color = Color(0xFA111313), contentColor = Color(0xFFE9EAE6), shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color(0xFF353837)),
             ) {
