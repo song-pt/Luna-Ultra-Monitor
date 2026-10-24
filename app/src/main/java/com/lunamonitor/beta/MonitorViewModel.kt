@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import com.lunamonitor.beta.protocol.GimbalProtocol
 import java.util.concurrent.atomic.AtomicLong
 
 class MonitorViewModel(application: Application) : AndroidViewModel(application) {
@@ -38,6 +39,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     private val assembler = AnnexBAssembler()
     private val bytes = AtomicLong(0)
     private val frames = AtomicLong(0)
+    private val decodeLatencyNs = AtomicLong(0)
     private val packets = AtomicLong(0)
     private val zoomRevision = AtomicLong(0)
     private val decoder = StreamDecoder(
@@ -46,12 +48,17 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                 current.copy(streamStats = current.streamStats.copy(width = width, height = height))
             }
         },
-        onFrameDecoded = { frames.incrementAndGet() },
+        onFrameDecoded = { latencyNs -> frames.incrementAndGet(); decodeLatencyNs.set(latencyNs) },
     )
+    private var gimbalJob: Job? = null
+    @Volatile private var latestStick = 0 to 0
+    private var lastStatsAt = 0L
     private var streamJob: Job? = null
     private var watchdogJob: Job? = null
     private var zoomJob: Job? = null
     private var disconnectJob: Job? = null
+    private var connectJob: Job? = null
+    private val connectionEpoch = AtomicLong(0)
     private var lastAppliedZoom = Float.NaN
     private var decoderSurface: Surface? = null
     private var startedAt = 0L
@@ -62,19 +69,28 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     }
 
     init {
+        session.onTransportClosed = {
+            gimbalJob?.cancel(); gimbalJob = null
+            mutableState.update { current ->
+                if (current.connection == ConnectionState.IDLE) current
+                else current.copy(connection = ConnectionState.ERROR, connectionMessage = "图传连接已中断", controlsExpanded = false, gimbalExpanded = false)
+            }
+        }
         application.getSystemService(PowerManager::class.java).addThermalStatusListener(thermalListener)
     }
 
     fun connect() {
         if (state.value.connection in setOf(ConnectionState.CONNECTING, ConnectionState.HANDSHAKING, ConnectionState.STREAMING)) return
         mutableState.update { it.copy(connection = ConnectionState.CONNECTING, connectionMessage = "正在连接 Luna Ultra", error = null) }
+        val epoch = connectionEpoch.incrementAndGet()
         startCollector()
-        viewModelScope.launch {
+        connectJob = viewModelScope.launch {
             disconnectJob?.join()
             disconnectJob = null
             runCatching {
                 mutableState.update { it.copy(connection = ConnectionState.HANDSHAKING, connectionMessage = "正在建立图传会话") }
                 withContext(Dispatchers.IO) { session.connect() }
+                if (epoch != connectionEpoch.get()) return@launch
                 mutableState.update {
                     if (it.connection == ConnectionState.STREAMING) it
                     else it.copy(connection = ConnectionState.WAITING_VIDEO, connectionMessage = "已连接，等待实时画面")
@@ -93,8 +109,12 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                         mutableState.update { it.copy(cameraColorMode = mode) }
                     }
                 }
+                runCatching { withContext(Dispatchers.IO) { session.firmware() } }.getOrNull()?.let { firmware ->
+                    mutableState.update { it.copy(cameraFirmware = firmware) }
+                }
                 startWatchdog()
             }.onFailure { error ->
+                if (epoch != connectionEpoch.get()) return@onFailure
                 streamJob?.cancel(); streamJob = null
                 session.forceClose()
                 mutableState.update { it.copy(connection = ConnectionState.ERROR, connectionMessage = "连接失败", error = error.message ?: "未知错误") }
@@ -103,6 +123,9 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun disconnect() {
+        connectionEpoch.incrementAndGet()
+        connectJob?.cancel(); connectJob = null
+        stopGimbal()
         if (state.value.connection == ConnectionState.IDLE) return
         watchdogJob?.cancel(); watchdogJob = null
         streamJob?.cancel(); streamJob = null
@@ -129,6 +152,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         }
         disconnectJob?.cancel()
         disconnectJob = viewModelScope.launch(Dispatchers.IO) {
+            delay(180) // Allow both reliable STOP packets to leave before closing the socket.
             runCatching { session.disconnect() }.onFailure { session.forceClose() }
         }
     }
@@ -145,14 +169,17 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         streamJob?.cancel()
         startedAt = System.nanoTime(); bytes.set(0); frames.set(0); packets.set(0)
         assembler.reset()
+        val epoch = connectionEpoch.get()
         streamJob = viewModelScope.launch(Dispatchers.Default) {
-            session.media.collect { media ->
+            session.media.collect { packet ->
+                val media = packet.data
+                if (epoch != connectionEpoch.get()) return@collect
                 bytes.addAndGet(media.size.toLong())
                 val packetCount = packets.incrementAndGet()
                 if (packetCount == 1L) {
                     mutableState.update { it.copy(connectionMessage = "已收到视频码流，正在同步关键帧") }
                 }
-                val accessUnits = assembler.append(media)
+                val accessUnits = assembler.appendMediaPacket(media, packet.receivedAtNs)
                 assembler.codec?.let { selected ->
                     if (state.value.streamStats.codec != selected.label) {
                         mutableState.update { current ->
@@ -170,7 +197,8 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
                 val decodedFrames = frames.get()
-                if (decodedFrames > 0L) {
+                if (decodedFrames > 0L && (state.value.connection != ConnectionState.STREAMING || System.nanoTime() - lastStatsAt >= 250_000_000L)) {
+                    lastStatsAt = System.nanoTime()
                     val elapsed = ((System.nanoTime() - startedAt) / 1_000_000_000.0).coerceAtLeast(0.001)
                     mutableState.update { current ->
                         current.copy(
@@ -181,6 +209,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                                 bitrateKbps = (bytes.get() * 8 / elapsed / 1000).toInt(),
                                 mediaFrames = decodedFrames,
                                 mediaPackets = packetCount,
+                                processingDelayMs = (decodeLatencyNs.get()/1_000_000L).toInt(),
                             ),
                         )
                     }
@@ -226,8 +255,39 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun selectSection(section: ToolSection) = mutableState.update {
-        it.copy(selectedSection = if (it.selectedSection == section) null else section, controlsExpanded = false)
+    fun selectSection(section: ToolSection) {
+        stopGimbal()
+        mutableState.update { it.copy(selectedSection = if (it.selectedSection == section) null else section, controlsExpanded = false, gimbalExpanded = false) }
+    }
+    fun toggleGimbal() {
+        stopGimbal()
+        mutableState.update { if (it.selectedSection != null) it else it.copy(gimbalExpanded = !it.gimbalExpanded) }
+    }
+    fun moveGimbal(x: Float, y: Float) {
+        if (!GimbalProtocol.supportsFirmware(state.value.cameraFirmware)) return
+        if (!state.value.gimbalExpanded || state.value.connection !in setOf(ConnectionState.STREAMING, ConnectionState.WAITING_VIDEO)) return
+        latestStick = GimbalProtocol.normalized(x, y)
+        if (latestStick == (0 to 0)) { stopGimbal(); return }
+        if (gimbalJob?.isActive == true) return
+        session.beginGimbalMotion()
+        gimbalJob = viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                val (horizontal, vertical) = latestStick
+                session.moveGimbal(horizontal, vertical)
+                delay(50)
+            }
+        }
+    }
+    fun stopGimbal() {
+        gimbalJob?.cancel(); gimbalJob = null
+        latestStick = 0 to 0
+        val revision = session.stopGimbal()
+        viewModelScope.launch(Dispatchers.IO) { delay(150); session.repeatGimbalStop(revision) }
+    }
+    fun gimbalAction(action: Int) {
+        if (!GimbalProtocol.supportsFirmware(state.value.cameraFirmware)) return
+        stopGimbal()
+        runCameraControl("云台控制") { session.gimbalAction(action) }
     }
     fun setScaleMode(mode: ScaleMode) = mutableState.update { it.copy(scaleMode = mode) }
     fun setAdjustments(value: ColorAdjustments) = mutableState.update { it.copy(adjustments = value) }
@@ -320,7 +380,6 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
 
     fun commitZoom() {
         zoomJob?.cancel()
-        disconnectJob?.cancel()
         val selected = state.value.zoom
         if (lastAppliedZoom.isFinite() && kotlin.math.abs(lastAppliedZoom - selected) < 0.01f) return
         val revision = zoomRevision.incrementAndGet()
@@ -357,14 +416,18 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
 
     private fun runCameraControl(progress: String, block: suspend () -> Unit) {
         if (state.value.cameraControlBusy || state.value.connection !in setOf(ConnectionState.STREAMING, ConnectionState.WAITING_VIDEO)) return
+        mutableState.update { it.copy(cameraControlBusy = true, cameraControlMessage = progress) }
+        val epoch = connectionEpoch.get()
         viewModelScope.launch {
-            mutableState.update { it.copy(cameraControlBusy = true, cameraControlMessage = progress) }
             runCatching { withContext(Dispatchers.IO) { block() } }
-                .onFailure { error -> mutableState.update { it.copy(cameraControlMessage = "控制失败：${error.message}") } }
-            mutableState.update { it.copy(cameraControlBusy = false) }
+                .onFailure { error -> if (epoch == connectionEpoch.get()) mutableState.update { it.copy(cameraControlMessage = "控制失败：${error.message}") } }
+            if (epoch == connectionEpoch.get()) mutableState.update { it.copy(cameraControlBusy = false) }
         }
     }
-    fun toggleCleanView() = mutableState.update { it.copy(cleanView = !it.cleanView, selectedSection = null) }
+    fun toggleCleanView() {
+        stopGimbal()
+        mutableState.update { it.copy(cleanView = !it.cleanView, selectedSection = null, controlsExpanded = false, gimbalExpanded = false) }
+    }
     fun toggleThirds() = mutableState.update { it.copy(showThirds = !it.showThirds) }
     fun toggleCenter() = mutableState.update { it.copy(showCenter = !it.showCenter) }
     fun toggleSafeArea() = mutableState.update { it.copy(showSafeArea = !it.showSafeArea) }
@@ -379,7 +442,11 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     fun clearError() = mutableState.update { it.copy(error = null) }
 
     override fun onCleared() {
+        connectJob?.cancel()
+        disconnectJob?.cancel()
         getApplication<Application>().getSystemService(PowerManager::class.java).removeThermalStatusListener(thermalListener)
+        gimbalJob?.cancel()
+        session.stopGimbal()
         streamJob?.cancel()
         watchdogJob?.cancel()
         zoomJob?.cancel()

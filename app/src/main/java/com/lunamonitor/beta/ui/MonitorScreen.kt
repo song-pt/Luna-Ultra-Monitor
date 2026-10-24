@@ -1,5 +1,15 @@
 package com.lunamonitor.beta.ui
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -88,6 +98,14 @@ fun LunaMonitorApp(viewModel: MonitorViewModel) {
 
 @Composable
 private fun MonitorScreen(state: MonitorUiState, actions: MonitorViewModel) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP || event == Lifecycle.Event.ON_PAUSE) actions.stopGimbal()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer); actions.stopGimbal() }
+    }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         AndroidView(
             factory = { context -> MonitorGlView(context).also { it.onDecoderSurface = actions::attachDecoderSurface } },
@@ -111,7 +129,10 @@ private fun MonitorScreen(state: MonitorUiState, actions: MonitorViewModel) {
                 TopStatusBar(state)
                 BottomToolBar(state, actions)
                 state.selectedSection?.let { ToolPanel(it, state, actions) }
-                if (state.selectedSection == null) CameraControlDrawer(state, actions)
+                if (state.selectedSection == null) {
+                    CameraControlDrawer(state, actions)
+                    GimbalControl(state, actions)
+                }
             } else {
                 CleanViewExit(actions)
             }
@@ -282,20 +303,21 @@ private fun LineGlyph(glyph: MonitorGlyph, tint: Color, modifier: Modifier = Mod
 @Composable
 private fun BoxScope.ToolPanel(section: ToolSection, state: MonitorUiState, actions: MonitorViewModel) {
     BoxWithConstraints(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = 48.dp, bottom = 68.dp)) {
+        val compactSettings = section == ToolSection.CAMERA_SETTINGS && MonitorLayoutPolicy.compactHeight(maxHeight.value)
         Surface(
             modifier = Modifier.align(Alignment.CenterEnd).width(MonitorLayoutPolicy.panelWidth(maxWidth.value).dp).fillMaxHeight(),
             color = Color(0xF2111313), contentColor = Color(0xFFE9EAE6), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFF303332)),
         ) {
           Column(Modifier.padding(if (MonitorLayoutPolicy.compactHeight(maxHeight.value)) 10.dp else 16.dp)) {
-            Text(sectionTitle(section, state.language), fontSize = 15.sp, color = Color(0xFFE9EAE6))
-            Text(sectionSubtitle(section, state.language), color = Color(0xFFB8BCB8), fontSize = 11.sp)
-            Spacer(Modifier.height(8.dp)); HorizontalDivider(color = Color(0xFF2B2D2D)); Spacer(Modifier.height(8.dp))
+            Text(sectionTitle(section, state.language), fontSize = if (compactSettings) 13.sp else 15.sp, color = Color(0xFFE9EAE6), maxLines = 1)
+            if (!compactSettings) Text(sectionSubtitle(section, state.language), color = Color(0xFFB8BCB8), fontSize = 11.sp)
+            Spacer(Modifier.height(if (compactSettings) 4.dp else 8.dp)); HorizontalDivider(color = Color(0xFF2B2D2D)); Spacer(Modifier.height(if (compactSettings) 4.dp else 8.dp))
             Box(Modifier.weight(1f).fillMaxWidth()) { when (section) {
                 ToolSection.COLOR -> ColorPanel(state.adjustments, state.language, actions::setAdjustments)
                 ToolSection.LUT -> LutPanel(state, actions)
                 ToolSection.EXPOSURE -> ToggleList(listOf(UiText.get(state.language,"zebra") to state.zebra, UiText.get(state.language,"falseColor") to state.falseColor), listOf(actions::toggleZebra, actions::toggleFalseColor))
                 ToolSection.FOCUS -> ToggleList(listOf(UiText.get(state.language,"peaking") to state.peaking), listOf(actions::togglePeaking))
-                ToolSection.COMPOSITION -> Column(Modifier.verticalScroll(rememberScrollState())) {
+                ToolSection.COMPOSITION -> Column(Modifier.monitorScroll()) {
                     ToggleList(
                         listOf(UiText.get(state.language,"thirds") to state.showThirds, UiText.get(state.language,"centerMark") to state.showCenter, UiText.get(state.language,"safeArea") to state.showSafeArea),
                         listOf(actions::toggleThirds, actions::toggleCenter, actions::toggleSafeArea),
@@ -304,7 +326,7 @@ private fun BoxScope.ToolPanel(section: ToolSection, state: MonitorUiState, acti
                     GuideStyleControls(state, actions)
                 }
                 ToolSection.DISPLAY -> DisplayPanel(state, actions)
-                ToolSection.CAMERA_SETTINGS -> CameraSettingsPanel(state, actions)
+                ToolSection.CAMERA_SETTINGS -> CameraSettingsPanel(state, actions, compactSettings)
             } }
           }
         }
@@ -333,18 +355,20 @@ private fun sectionSubtitle(section: ToolSection, language: AppLanguage) = UiTex
 })
 
 @Composable
-private fun CameraSettingsPanel(state: MonitorUiState, actions: MonitorViewModel) {
+private fun CameraSettingsPanel(state: MonitorUiState, actions: MonitorViewModel, compact: Boolean) {
     val sizes = listOf("1080P", "2.7K", "4K", "8K")
     val formats = MonitorViewModel.VIDEO_FORMATS.filter { it.label.substringBefore(' ') == state.selectedVideoSize }
     Column(Modifier.fillMaxSize()) {
-        Text(UiText.get(state.language, "applyReadback"), fontSize = 10.sp, color = Color(0xFFB8BCB8))
+        if (!compact) Text(UiText.get(state.language, "applyReadback"), fontSize = 10.sp, color = Color(0xFFB8BCB8))
         state.cameraControlMessage?.let { message ->
-            Spacer(Modifier.height(5.dp))
-            Text(UiText.runtime(state.language, message), fontSize = 10.sp, color = Color.White)
+            if (!compact) Spacer(Modifier.height(5.dp))
+            Text(UiText.runtime(state.language, message), fontSize = if (compact) 9.sp else 10.sp, color = Color.White, maxLines = 1)
         }
-        Spacer(Modifier.height(10.dp))
-        Text(UiText.get(state.language, "cameraColorMode"), fontSize = 11.sp, color = Color.White)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(if (compact) 3.dp else 10.dp))
+        if (!compact) {
+            Text(UiText.get(state.language, "cameraColorMode"), fontSize = 11.sp, color = Color.White)
+            Spacer(Modifier.height(6.dp))
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             listOf(
                 CameraColorMode.STANDARD to "cameraColorStandard",
@@ -356,29 +380,33 @@ private fun CameraSettingsPanel(state: MonitorUiState, actions: MonitorViewModel
                     state.cameraColorMode == mode,
                     VideoFormatPolicy.canSetColorMode(state.connection, state.captureMode, state.cameraControlBusy, state.recording),
                     modifier = Modifier.weight(1f),
+                    compact = compact,
                 ) { actions.setVideoColorMode(mode) }
             }
         }
-        Text(
-            UiText.get(state.language, "cameraColorVideoOnly"),
-            fontSize = 9.sp,
-            color = Color(0xFFB8BCB8),
-            modifier = Modifier.padding(top = 5.dp, bottom = 9.dp),
-        )
+        if (!compact) {
+            Text(
+                UiText.get(state.language, "cameraColorVideoOnly"),
+                fontSize = 9.sp,
+                color = Color(0xFFB8BCB8),
+                modifier = Modifier.padding(top = 5.dp, bottom = 9.dp),
+            )
+        } else Spacer(Modifier.height(5.dp))
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Column(Modifier.weight(.42f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Column(Modifier.weight(.42f).monitorScroll(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text(UiText.get(state.language, "resolution"), fontSize = 11.sp, color = Color.White)
                 sizes.forEach { size ->
-                    ParameterChoice(size, state.selectedVideoSize == size, true) { actions.selectVideoSize(size) }
+                    ParameterChoice(size, state.selectedVideoSize == size, true, compact = compact) { actions.selectVideoSize(size) }
                 }
             }
-            Column(Modifier.weight(.58f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Column(Modifier.weight(.58f).monitorScroll(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text(UiText.get(state.language, "frameRate"), fontSize = 11.sp, color = Color.White)
                 formats.forEach { option ->
                     ParameterChoice(
                         option.label.substringAfter(' ') + " fps",
                         state.videoFormat?.resolutionCode == option.resolutionCode,
                         VideoFormatPolicy.canApply(state.connection, state.cameraControlBusy, state.recording),
+                        compact = compact,
                     ) { actions.setVideoFormat(option) }
                 }
             }
@@ -387,15 +415,15 @@ private fun CameraSettingsPanel(state: MonitorUiState, actions: MonitorViewModel
 }
 
 @Composable
-private fun ParameterChoice(label: String, selected: Boolean, enabled: Boolean, modifier: Modifier = Modifier, action: () -> Unit) {
+private fun ParameterChoice(label: String, selected: Boolean, enabled: Boolean, modifier: Modifier = Modifier, compact: Boolean = false, action: () -> Unit) {
     Row(
         modifier.fillMaxWidth().clickable(enabled = enabled, onClick = action)
             .background(if (selected) Color(0xFF414644) else Color(0xFF202322), RoundedCornerShape(9.dp))
             .border(1.dp, if (selected) Color(0xFF747B77) else Color(0xFF303432), RoundedCornerShape(9.dp))
-            .padding(horizontal = 10.dp, vertical = 10.dp),
+            .padding(horizontal = if (compact) 7.dp else 10.dp, vertical = if (compact) 6.dp else 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, fontSize = 11.sp, color = if (enabled) Color.White else Color(0xFF858A87))
+        Text(label, fontSize = if (compact) 10.sp else 11.sp, color = if (enabled) Color.White else Color(0xFF858A87), maxLines = 1)
         Spacer(Modifier.weight(1f))
         if (selected) drawSelectionDot()
     }
@@ -423,7 +451,7 @@ private fun LutPanel(state: MonitorUiState, actions: MonitorViewModel) {
     }
     val recoveryPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) load(uri, true) }
     val stylePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) load(uri, false) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().monitorScroll(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LutSlot(UiText.get(state.language,"recoveryLut"), state.recoveryLut?.name ?: UiText.get(state.language,"none"),
             { recoveryPicker.launch(arrayOf("application/octet-stream", "text/plain", "*/*")) }, { actions.setRecoveryLut(null) }, state.language)
         LutSlot(UiText.get(state.language,"styleLut"), state.styleLut?.name ?: UiText.get(state.language,"none"),
@@ -461,7 +489,8 @@ private fun ColorPanel(value: ColorAdjustments, language: AppLanguage, update: (
         Triple("clarity", value.clarity, -100f..100f), Triple("dehaze", value.dehaze, -100f..100f),
         Triple("softHighlights", value.highlightSoftness, 0f..100f), Triple("vignette", value.vignette, -100f..100f),
     )
-    LazyColumn {
+    val listState = rememberLazyListState()
+    LazyColumn(state = listState, modifier = Modifier.scrollEdges({ listState.canScrollBackward }, { listState.canScrollForward })) {
         items(rows) { (name, current, range) ->
             AdjustmentRow(UiText.get(language,name), current, range) { next ->
                 update(when (name) {
@@ -534,7 +563,7 @@ private fun GuideStyleRow(
 
 @Composable
 private fun DisplayPanel(state: MonitorUiState, actions: MonitorViewModel) {
-    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.monitorScroll(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
             ScaleMode.FIT to UiText.get(state.language,"fit"), ScaleMode.FILL_CROP to UiText.get(state.language,"cropFill"),
             ScaleMode.STRETCH to UiText.get(state.language,"stretch"), ScaleMode.PIXEL_TO_PIXEL to UiText.get(state.language,"pixel"),
@@ -560,96 +589,119 @@ private fun NeutralToggle(label: String, selected: Boolean, action: () -> Unit) 
 private fun BoxScope.CameraControlDrawer(state: MonitorUiState, actions: MonitorViewModel) {
     val right = state.controlsSide == DrawerSide.RIGHT
     var dragDistance by remember(state.controlsSide) { mutableFloatStateOf(0f) }
-    val edgePadding = if (right) Modifier.padding(end = 12.dp) else Modifier.padding(start = 12.dp)
     Column(
-        Modifier.align(if (right) Alignment.CenterEnd else Alignment.CenterStart).fillMaxHeight().padding(top = 48.dp, bottom = 68.dp).then(edgePadding),
+        Modifier.align(if (right) Alignment.CenterEnd else Alignment.CenterStart)
+            .fillMaxHeight().padding(top = 48.dp, bottom = 68.dp, start = 10.dp, end = 10.dp),
         horizontalAlignment = if (right) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(
-            Modifier.pointerInput(state.controlsExpanded) {
-                if (!state.controlsExpanded) detectDragGestures(
-                    onDragStart = { dragDistance = 0f },
-                    onDragEnd = {
-                        if (dragDistance < -36f) actions.setControlsSide(DrawerSide.LEFT)
-                        if (dragDistance > 36f) actions.setControlsSide(DrawerSide.RIGHT)
-                        dragDistance = 0f
-                    },
-                    onDragCancel = { dragDistance = 0f },
-                ) { change, amount -> change.consume(); dragDistance += amount.x }
-            },
-        ) { CameraDrawerHandle(state.controlsExpanded, state.language, actions::toggleControls) }
+        Box(Modifier.pointerInput(state.controlsExpanded) {
+            if (!state.controlsExpanded) detectDragGestures(
+                onDragStart = { dragDistance = 0f },
+                onDragEnd = {
+                    if (dragDistance < -36f) actions.setControlsSide(DrawerSide.LEFT)
+                    if (dragDistance > 36f) actions.setControlsSide(DrawerSide.RIGHT)
+                },
+            ) { change, amount -> change.consume(); dragDistance += amount.x }
+        }) { CameraDrawerHandle(state.controlsExpanded, state.language, actions::toggleControls) }
         if (state.controlsExpanded) {
-            Spacer(Modifier.height(6.dp))
-            Surface(
-                modifier = Modifier.weight(1f),
-                color = Color(0xFA111313), contentColor = Color(0xFFE9EAE6), shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Color(0xFF353837)),
-            ) {
-                Column(
-                    Modifier.padding(horizontal = 7.dp, vertical = 9.dp).width(98.dp).verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(UiText.get(state.language,"cameraControl"), fontSize = 13.sp, color = Color(0xFFF0F1ED)); Spacer(Modifier.height(8.dp))
-                    if (state.connection == ConnectionState.STREAMING || state.connection == ConnectionState.WAITING_VIDEO) {
-                        Text(
-                            when (state.captureMode) { CaptureMode.PHOTO -> UiText.get(state.language,"photoMode"); CaptureMode.VIDEO -> UiText.get(state.language,"videoMode"); CaptureMode.UNKNOWN -> UiText.get(state.language,"detectingMode") },
-                            fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(5.dp))
-                        NeutralButton(
-                            when (state.captureMode) {
-                                CaptureMode.PHOTO -> UiText.get(state.language,"takePhoto")
-                                CaptureMode.VIDEO -> if (state.recording) UiText.get(state.language,"stopRecord") else UiText.get(state.language,"startRecord")
-                                CaptureMode.UNKNOWN -> UiText.get(state.language,"readMode")
-                            },
-                            !state.cameraControlBusy, actions::triggerCapture, Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        NeutralButton(
-                            when (state.captureMode) {
-                                CaptureMode.PHOTO -> UiText.get(state.language,"switchVideo")
-                                CaptureMode.VIDEO -> UiText.get(state.language,"switchPhoto")
-                                CaptureMode.UNKNOWN -> UiText.get(state.language,"redetect")
-                            },
-                            !state.cameraControlBusy && !state.recording,
-                            if (state.captureMode == CaptureMode.UNKNOWN) actions::refreshCameraMode else actions::switchCaptureMode,
-                            Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(10.dp)); HorizontalDivider(color = Color(0xFF303332)); Spacer(Modifier.height(8.dp))
-                        Text("%.1f×".format(state.zoom), fontSize = 12.sp, color = Color(0xFFD6D8D3))
-                        val quickHeight = 29.dp
-                        val quickGap = 4.dp
-                        val sliderLength = quickHeight * 5 + quickGap * 4
-                        Row(Modifier.fillMaxWidth().height(sliderLength), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.width(43.dp).height(sliderLength), contentAlignment = Alignment.Center) {
-                                Slider(
-                                    value = state.zoom,
-                                    onValueChange = actions::previewZoom,
-                                    onValueChangeFinished = actions::commitZoom,
-                                    valueRange = 1f..12f,
-                                    modifier = Modifier.requiredWidth(sliderLength).rotate(-90f),
-                                )
-                            }
-                            Spacer(Modifier.width(4.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(quickGap)) {
-                                listOf(1f, 2f, 3f, 6f, 12f).forEach { zoom ->
-                                    QuickZoomButton(zoom, state.zoom, quickHeight, actions::setZoomPreset)
-                                }
-                            }
-                        }
-                        state.cameraControlMessage?.let {
-                            Spacer(Modifier.height(6.dp)); Text(UiText.runtime(state.language,it), fontSize = 9.sp, lineHeight = 12.sp, color = Color(0xFFB8BCB8))
-                        }
-                        Spacer(Modifier.height(8.dp)); HorizontalDivider(color = Color(0xFF303332)); Spacer(Modifier.height(7.dp))
-                        NeutralButton(UiText.get(state.language,"disconnect"), true, actions::disconnect, Modifier.fillMaxWidth())
-                    } else NeutralButton(UiText.get(state.language,"connect"), true, actions::connect, Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        UiText.get(state.language,"dragHint"),
-                        fontSize = 8.sp, lineHeight = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            Spacer(Modifier.height(5.dp))
+            Row(Modifier.weight(1f).width(154.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (right) VerticalZoomRail(state, actions, Modifier.weight(1f))
+                Column(Modifier.width(76.dp).monitorScroll(), horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    val connected = state.connection in setOf(ConnectionState.STREAMING, ConnectionState.WAITING_VIDEO)
+                    NeutralButton(UiText.get(state.language, if (state.captureMode == CaptureMode.PHOTO) "switchVideo" else "switchPhoto"),
+                        connected && !state.cameraControlBusy && !state.recording && state.captureMode != CaptureMode.UNKNOWN, actions::switchCaptureMode)
+                    val label = UiText.get(state.language, when(state.captureMode) {
+                        CaptureMode.PHOTO -> "takePhoto"
+                        CaptureMode.VIDEO -> if(state.recording) "stopRecord" else "startRecord"
+                        else -> "readMode"
+                    })
+                    Canvas(Modifier.size(68.dp).semantics { contentDescription = label }
+                        .clickable(enabled = connected && !state.cameraControlBusy, onClick = actions::triggerCapture)) {
+                        val center = Offset(size.width/2, size.height/2)
+                        drawCircle(Color.White, size.minDimension*.47f, center, style=Stroke(2.dp.toPx()))
+                        val c = if(state.captureMode == CaptureMode.VIDEO) Color(0xFFE85A55) else Color.White
+                        if(state.recording) drawRoundRect(c, Offset(size.width*.32f,size.height*.32f), Size(size.width*.36f,size.height*.36f), androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))
+                        else drawCircle(c, size.minDimension*.37f, center)
+                    }
+                    Text(label, fontSize=10.sp, color=Color.White, maxLines=2)
+                    if (state.cameraControlBusy) Text("…", color=Color.White)
+                    state.cameraControlMessage?.let { Text(UiText.runtime(state.language,it), fontSize=9.sp, color=Color.LightGray, maxLines=3) }
+                    NeutralButton(UiText.get(state.language, if(connected) "disconnect" else "connect"), true,
+                        if(connected) actions::disconnect else actions::connect)
                 }
+                if (!right) VerticalZoomRail(state, actions, Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun VerticalZoomRail(state: MonitorUiState, actions: MonitorViewModel, modifier: Modifier) {
+    BoxWithConstraints(modifier.fillMaxHeight()) {
+        val railHeight = maxHeight.coerceAtMost(240.dp)
+        Row(Modifier.height(railHeight), verticalAlignment=Alignment.CenterVertically) {
+            Canvas(Modifier.width(30.dp).fillMaxHeight()
+                .semantics { contentDescription = "Zoom ${state.zoom}" }
+                .pointerInput(actions, railHeight) {
+                    fun preview(y: Float) { actions.previewZoom(1f + (1f-y/size.height).coerceIn(0f,1f)*11f) }
+                    detectDragGestures(onDragStart={preview(it.y)}, onDragEnd=actions::commitZoom,
+                        onDragCancel={}, onDrag={change, _ -> change.consume();preview(change.position.y)})
+                }) {
+                val x=size.width/2; val pad=8.dp.toPx()
+                drawLine(Color(0xFF757D78),Offset(x,pad),Offset(x,size.height-pad),3.dp.toPx(),StrokeCap.Round)
+                val y=pad+(size.height-2*pad)*(1f-(state.zoom-1f)/11f)
+                drawCircle(Color.White,7.dp.toPx(),Offset(x,y))
+            }
+            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement=Arrangement.SpaceEvenly,
+                horizontalAlignment=Alignment.CenterHorizontally) {
+                listOf(12f,6f,3f,2f,1f).forEach { zoom ->
+                    Text("${zoom.toInt()}×", Modifier.background(if(kotlin.math.abs(state.zoom-zoom)<.1f) Color(0xFF4C5550) else Color(0xB0202522),RoundedCornerShape(20.dp))
+                        .clickable(enabled=!state.cameraControlBusy) {actions.setZoomPreset(zoom)}.padding(6.dp),color=Color.White,fontSize=10.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.GimbalControl(state: MonitorUiState, actions: MonitorViewModel) {
+    val right = state.controlsSide != DrawerSide.RIGHT
+    Column(Modifier.align(if(right) Alignment.CenterEnd else Alignment.CenterStart)
+        .fillMaxHeight().padding(top=48.dp,bottom=68.dp,start=10.dp,end=10.dp),
+        verticalArrangement=Arrangement.Center, horizontalAlignment=if(right) Alignment.End else Alignment.Start) {
+        NeutralButton(UiText.get(state.language, if(state.gimbalExpanded) "collapse" else "gimbal"), true,actions::toggleGimbal)
+        if(state.gimbalExpanded) {
+            Column(Modifier.weight(1f).width(156.dp).background(Color(0xD51A1F1C),RoundedCornerShape(20.dp)).padding(8.dp).monitorScroll(),
+                horizontalAlignment=Alignment.CenterHorizontally) {
+                var stick by remember { mutableStateOf(Offset.Zero) }
+                DisposableEffect(Unit) { onDispose { actions.stopGimbal() } }
+                val enabled=state.connection in setOf(ConnectionState.STREAMING,ConnectionState.WAITING_VIDEO) && com.lunamonitor.beta.protocol.GimbalProtocol.supportsFirmware(state.cameraFirmware)
+                val description=UiText.get(state.language,"gimbalDirections")
+                Canvas(Modifier.size(132.dp).semantics {contentDescription=description}.pointerInput(enabled) {
+                    if(enabled) detectDragGestures(
+                        onDragStart={point -> stick=point-Offset(size.width/2f,size.height/2f);actions.moveGimbal(stick.x/(size.width*.38f),stick.y/(size.height*.38f))},
+                        onDragEnd={stick=Offset.Zero;actions.stopGimbal()},
+                        onDragCancel={stick=Offset.Zero;actions.stopGimbal()},
+                        onDrag={change,_->change.consume();stick=change.position-Offset(size.width/2f,size.height/2f);actions.moveGimbal(stick.x/(size.width*.38f),stick.y/(size.height*.38f))})
+                }) {
+                    val c=Offset(size.width/2,size.height/2);val radius=size.minDimension*.38f
+                    drawCircle(Color(0xFF363F39),radius,c)
+                    drawCircle(Color(0xFF8F9C93),radius,c,style=Stroke(1.dp.toPx()))
+                    drawLine(Color(0xFF707B73),Offset(c.x-radius,c.y),Offset(c.x+radius,c.y),1.dp.toPx())
+                    drawLine(Color(0xFF707B73),Offset(c.x,c.y-radius),Offset(c.x,c.y+radius),1.dp.toPx())
+                    val length=stick.getDistance();val offset=if(length>radius) stick*(radius/length) else stick
+                    drawCircle(if(enabled) Color(0xFFD6DED8) else Color.Gray,16.dp.toPx(),c+offset)
+                }
+                Text("↑ ↓ ← →",color=Color.LightGray,fontSize=12.sp)
+                if (!enabled) Text(UiText.get(state.language,"gimbalFirmware"),fontSize=9.sp,color=Color.LightGray)
+                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    NeutralButton(UiText.get(state.language,"recenter"),enabled && !state.cameraControlBusy,{actions.gimbalAction(2)},Modifier.weight(1f))
+                    NeutralButton(UiText.get(state.language,"flip"),enabled && !state.cameraControlBusy,{actions.gimbalAction(3)},Modifier.weight(1f))
+                }
+                Text(UiText.get(state.language,"gimbalRelease"),fontSize=9.sp,color=Color.LightGray)
             }
         }
     }
@@ -744,4 +796,28 @@ private fun GuideOverlay(state: MonitorUiState) {
             }
         }
     }
+}
+
+/** The indicators only exist while more content is actually reachable. */
+private fun Modifier.scrollEdges(backward: () -> Boolean, forward: () -> Boolean): Modifier = drawWithContent {
+    drawContent()
+    val h = 20.dp.toPx().coerceAtMost(size.height/4)
+    if (backward()) {
+        drawRect(Brush.verticalGradient(listOf(Color(0xE0111512),Color.Transparent),0f,h),size=Size(size.width,h))
+        val x=size.width/2
+        drawLine(Color.LightGray,Offset(x-4.dp.toPx(),8.dp.toPx()),Offset(x,4.dp.toPx()),1.5.dp.toPx())
+        drawLine(Color.LightGray,Offset(x,4.dp.toPx()),Offset(x+4.dp.toPx(),8.dp.toPx()),1.5.dp.toPx())
+    }
+    if (forward()) {
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent,Color(0xE0111512)),size.height-h,size.height),topLeft=Offset(0f,size.height-h),size=Size(size.width,h))
+        val x=size.width/2; val y=size.height-5.dp.toPx()
+        drawLine(Color.White,Offset(x-4.dp.toPx(),y-4.dp.toPx()),Offset(x,y),1.5.dp.toPx())
+        drawLine(Color.White,Offset(x,y),Offset(x+4.dp.toPx(),y-4.dp.toPx()),1.5.dp.toPx())
+    }
+}
+
+@Composable
+private fun Modifier.monitorScroll(): Modifier {
+    val scroll=rememberScrollState()
+    return this.scrollEdges({scroll.canScrollBackward},{scroll.canScrollForward}).verticalScroll(scroll)
 }

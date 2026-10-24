@@ -70,7 +70,7 @@ object Ucd2Protocol {
 
 sealed interface Ucd2Frame {
     data class Response(val code: Int, val requestId: Int, val body: ByteArray) : Ucd2Frame
-    data class Media(val substream: Int, val data: ByteArray) : Ucd2Frame
+    data class Media(val substream: Int, val data: ByteArray, val receivedAtNs: Long = System.nanoTime()) : Ucd2Frame
     data object KeepAlive : Ucd2Frame
 }
 
@@ -107,6 +107,11 @@ class Ucd2FrameScanner {
                 return output
             }
             val payloadStart = start + 12
+            if (Ucd2Protocol.checksum(pending.copyOfRange(start, payloadStart + declared)) != littleEndianInt(pending, payloadStart + declared)) {
+                pending = pending.copyOfRange(start + frameLength.toInt(), pending.size)
+                offset = 0
+                continue
+            }
             when (type) {
                 Ucd2Protocol.TYPE_STREAM -> output += Ucd2Frame.KeepAlive
                 Ucd2Protocol.TYPE_MEDIA -> if (declared > 9) {

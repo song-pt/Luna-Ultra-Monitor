@@ -1,0 +1,40 @@
+// !$*UTF8*$!
+{ archiveVersion = 1; classes = {}; objectVersion = 56; objects = {
+2F2E526FD54986297E6712D8 = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en"; path = "en.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+BEE074F98E6FF24F6898819B = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+4B89C72BE98A9699BE49DE98 = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "ja"; path = "ja.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+987AAB6D1335350732FD5CDB = {isa = PBXVariantGroup; children = (2F2E526FD54986297E6712D8,BEE074F98E6FF24F6898819B,4B89C72BE98A9699BE49DE98); name = InfoPlist.strings; sourceTree = "<group>"; };
+06181FCC449FC6597CE06DAA = {isa = PBXBuildFile; fileRef = 987AAB6D1335350732FD5CDB; };
+001FA10046D712583203B1B1 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProtocolCore.swift"; sourceTree = "<group>"; };
+FB7138B5BD69A5A103A355C6 = {isa = PBXBuildFile; fileRef = 001FA10046D712583203B1B1; };
+BB8066E788ABD54E7848ECBC = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VideoDecoder.swift"; sourceTree = "<group>"; };
+B26A3C9E60D0DBFA8E95512E = {isa = PBXBuildFile; fileRef = BB8066E788ABD54E7848ECBC; };
+A4BA0EF9EAF026322ED3D3AB = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraSession.swift"; sourceTree = "<group>"; };
+69173B284902B80FFE2C6038 = {isa = PBXBuildFile; fileRef = A4BA0EF9EAF026322ED3D3AB; };
+215ABD96E462792C692C6944 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MetalMonitor.swift"; sourceTree = "<group>"; };
+6583F64237B6EBAB62882F71 = {isa = PBXBuildFile; fileRef = 215ABD96E462792C692C6944; };
+43076854372228C145C1622F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LunaMonitorApp.swift"; sourceTree = "<group>"; };
+02343411D8E163FB9EE692B4 = {isa = PBXBuildFile; fileRef = 43076854372228C145C1622F; };
+689ADD4B237E0161812AAD63 = {isa = PBXFileReference; lastKnownFileType = text; path = "Strings.json"; sourceTree = "<group>"; };
+B4043C636D8B3F8F4B6CC32F = {isa = PBXBuildFile; fileRef = 689ADD4B237E0161812AAD63; };
+981ED6E3B18654346058D17A = {isa = PBXFileReference; lastKnownFileType = text; path = "Formats.json"; sourceTree = "<group>"; };
+DA82EE12383886C8FF7A0293 = {isa = PBXBuildFile; fileRef = 981ED6E3B18654346058D17A; };
+DCB4E040DD20EAD3828F5035 = {isa = PBXFileReference; lastKnownFileType = text; path = "Monitor.metal"; sourceTree = "<group>"; };
+5519D5EEA7A7504CDC3BEECB = {isa = PBXBuildFile; fileRef = DCB4E040DD20EAD3828F5035; };
+7B594B6DB375E1BF3F23CDD6 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+7D1043473D55BFA90E8530D3 = {isa = PBXFileReference; explicitFileType = wrapper.application; path = LunaMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+DC76E9F0C0006E8F919E0C51 = {isa = PBXGroup; children = (A1F13B3BC20A296E08C212BE,FBDC4F23F93125BBEEAE800C); sourceTree = "<group>"; };
+A1F13B3BC20A296E08C212BE = {isa = PBXGroup; path = LunaMonitor; children = (987AAB6D1335350732FD5CDB,001FA10046D712583203B1B1,BB8066E788ABD54E7848ECBC,A4BA0EF9EAF026322ED3D3AB,215ABD96E462792C692C6944,43076854372228C145C1622F,689ADD4B237E0161812AAD63,981ED6E3B18654346058D17A,DCB4E040DD20EAD3828F5035,7B594B6DB375E1BF3F23CDD6); sourceTree = "<group>"; };
+FBDC4F23F93125BBEEAE800C = {isa = PBXGroup; name = Products; children = (7D1043473D55BFA90E8530D3); sourceTree = "<group>"; };
+BCE16DD0260827ECF338C787 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (FB7138B5BD69A5A103A355C6,B26A3C9E60D0DBFA8E95512E,69173B284902B80FFE2C6038,6583F64237B6EBAB62882F71,02343411D8E163FB9EE692B4); runOnlyForDeploymentPostprocessing = 0; };
+0189424A5A60FED329FA868E = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (06181FCC449FC6597CE06DAA,B4043C636D8B3F8F4B6CC32F,DA82EE12383886C8FF7A0293,5519D5EEA7A7504CDC3BEECB); runOnlyForDeploymentPostprocessing = 0; };
+7561BFB015D8F536760CB671 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+0E8A3AD980EC179856012B7E = {isa = PBXNativeTarget; buildConfigurationList = C57128001CE614BF8549D6BB; buildPhases = (BCE16DD0260827ECF338C787,7561BFB015D8F536760CB671,0189424A5A60FED329FA868E); buildRules = (); dependencies = (); name = LunaMonitor; productName = LunaMonitor; productReference = 7D1043473D55BFA90E8530D3; productType = "com.apple.product-type.application"; };
+89E1FD6268CC0F221A2BE178 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 16.0; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Debug; };
+E6DE6C99132752C914FEF632 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 16.0; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Release; };
+862894B703A6DEDF96A9DD6C = {isa = XCConfigurationList; buildConfigurations = (89E1FD6268CC0F221A2BE178,E6DE6C99132752C914FEF632); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+7082CC0B6FC1282FCEABD07A = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 16.0; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0; PRODUCT_BUNDLE_IDENTIFIER = org.lunamonitor.monitor; PRODUCT_NAME = "$(TARGET_NAME)"; INFOPLIST_FILE = LunaMonitor/Info.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = NO; CURRENT_PROJECT_VERSION = 110; MARKETING_VERSION = 1.1.0; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; ASSETCATALOG_COMPILER_APPICON_NAME = ""; }; name = Debug; };
+639A7CA24D39909E713B47F7 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 16.0; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0; PRODUCT_BUNDLE_IDENTIFIER = org.lunamonitor.monitor; PRODUCT_NAME = "$(TARGET_NAME)"; INFOPLIST_FILE = LunaMonitor/Info.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = NO; CURRENT_PROJECT_VERSION = 110; MARKETING_VERSION = 1.1.0; SWIFT_OPTIMIZATION_LEVEL = "-O"; ASSETCATALOG_COMPILER_APPICON_NAME = ""; }; name = Release; };
+C57128001CE614BF8549D6BB = {isa = XCConfigurationList; buildConfigurations = (7082CC0B6FC1282FCEABD07A,639A7CA24D39909E713B47F7); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+98F54143AB4E86B28C3AFEE0 = {isa = PBXProject; attributes = {LastUpgradeCheck = 2630;}; buildConfigurationList = 862894B703A6DEDF96A9DD6C; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; knownRegions = (en,"zh-Hans",ja); mainGroup = DC76E9F0C0006E8F919E0C51; productRefGroup = FBDC4F23F93125BBEEAE800C; projectDirPath = ""; projectRoot = ""; targets = (0E8A3AD980EC179856012B7E); };
+}; rootObject = 98F54143AB4E86B28C3AFEE0; }

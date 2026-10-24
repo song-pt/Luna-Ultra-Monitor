@@ -5,7 +5,7 @@ enum class VideoCodec(val mime: String, val label: String) {
     HEVC("video/hevc", "H.265/HEVC"),
 }
 
-data class AccessUnit(val bytes: ByteArray, val keyFrame: Boolean, val codec: VideoCodec)
+data class AccessUnit(val bytes: ByteArray, val keyFrame: Boolean, val codec: VideoCodec, val receivedAtNs: Long = 0)
 
 /** Incremental Annex-B splitter with on-wire H.264/H.265 detection. */
 class AnnexBAssembler {
@@ -29,6 +29,17 @@ class AnnexBAssembler {
         }
         bytes = bytes.copyOfRange(starts.last().first, bytes.size)
         return output
+    }
+
+    fun appendMediaPacket(chunk: ByteArray, receivedAtNs: Long = System.nanoTime()): List<AccessUnit> {
+        val output = append(chunk).toMutableList()
+        val starts = startCodes(bytes)
+        if (starts.size == 1 && bytes.size > starts[0].second) {
+            consumeNal(bytes.copyOfRange(starts[0].second, bytes.size), output)
+            bytes = ByteArray(0)
+        }
+        codec?.let { flush(output, it) }
+        return output.map { it.copy(receivedAtNs = receivedAtNs) }
     }
 
     fun reset() {

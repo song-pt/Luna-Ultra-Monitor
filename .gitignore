@@ -1,0 +1,20 @@
+.gradle/
+.kotlin/
+local.properties
+**/build/
+*.apk
+*.aab
+*.jks
+*.keystore
+.DS_Store
+captures/
+*.pcap
+*.pcapng
+
+# iOS build/signing outputs
+DerivedData/
+*.ipa
+*.xcuserstate
+xcuserdata/
+*.mobileprovision
+*.p12

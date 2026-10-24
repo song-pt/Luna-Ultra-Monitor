@@ -6,6 +6,12 @@ private data class Localized(val zh: String, val en: String, val ja: String)
 
 object UiText {
     private val values = mapOf(
+        "gimbalFirmware" to Localized("尚未识别支持的固件，请重新连接", "Supported firmware not identified; reconnect", "対応ファームウェア未確認。再接続してください"),
+        "gimbal" to Localized("云台", "Gimbal", "ジンバル"),
+        "recenter" to Localized("回中", "Center", "中央"),
+        "flip" to Localized("翻转", "Flip", "反転"),
+        "gimbalDirections" to Localized("摇杆：上、下、左、右", "Joystick: up, down, left, right", "スティック：上下左右"),
+        "gimbalRelease" to Localized("松手停止 · 断网时请检查相机", "Release to stop. Check camera if disconnected.", "離すと停止。切断時は本体を確認"),
         "color" to Localized("颜色", "Color", "カラー"), "lut" to Localized("LUT", "LUT", "LUT"),
         "exposure" to Localized("曝光", "Exposure", "露出"), "focus" to Localized("对焦", "Focus", "フォーカス"),
         "composition" to Localized("构图", "Frame", "構図"), "display" to Localized("显示", "Display", "表示"),
@@ -60,6 +66,8 @@ object UiText {
     fun runtime(language: AppLanguage, source: String): String {
         if (language == AppLanguage.ZH) return source
         val exact = mapOf(
+            "图传连接已中断" to Localized("图传连接已中断", "Camera connection lost", "カメラ接続が切断されました"),
+            "云台控制" to Localized("云台控制", "Gimbal control", "ジンバル操作"),
             "未连接" to Localized("未连接", "Disconnected", "未接続"), "实时监看" to Localized("实时监看", "Live monitor", "ライブモニター"),
             "正在连接 Luna Ultra" to Localized("正在连接 Luna Ultra", "Connecting to Luna Ultra", "Luna Ultra に接続中"),
             "正在建立图传会话" to Localized("正在建立图传会话", "Starting live-view session", "ライブビューを開始中"),

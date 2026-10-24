@@ -71,6 +71,8 @@ data class MonitorUiState(
     val peaking: Boolean = false,
     val cleanView: Boolean = false,
     val controlsExpanded: Boolean = false,
+    val gimbalExpanded: Boolean = false,
+    val cameraFirmware: String? = null,
     val controlsSide: DrawerSide = DrawerSide.RIGHT,
     val cameraControlBusy: Boolean = false,
     val recording: Boolean = false,

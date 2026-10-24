@@ -324,6 +324,7 @@ private class MonitorRenderer(private val invalidate: () -> Unit) : GLSurfaceVie
                 0.072-co*0.072+si*0.928,0.072-co*0.072-si*0.283,0.072+co*0.928+si*0.072);
               return clamp(m*c,0.0,1.0);
             }
+            vec2 boundedUv(vec2 p){ vec2 e=0.5*uTexel; return clamp(p,e,vec2(1.0)-e); }
             vec3 applyLut(sampler2D lut,vec3 c,float size,float columns){
               vec3 p=clamp(c,0.0,1.0)*(size-1.0);
               float b0=floor(p.b),b1=min(b0+1.0,size-1.0),blend=fract(p.b),rows=ceil(size/columns);
@@ -349,8 +350,8 @@ private class MonitorRenderer(private val invalidate: () -> Unit) : GLSurfaceVie
               c=pow(max(c,vec3(0.0001)),vec3(exp2(-uGamma*0.8))); c=hueRotate(c,uHue);
               l=dot(c,vec3(0.2126,0.7152,0.0722)); c=mix(vec3(l),c,1.0+uSaturation);
               float chroma=max(c.r,max(c.g,c.b))-min(c.r,min(c.g,c.b)); c=mix(vec3(l),c,1.0+uVibrance*(1.0-chroma));
-              vec3 n=texture(uTexture,uv+vec2(0.0,uTexel.y)).rgb, s=texture(uTexture,uv-vec2(0.0,uTexel.y)).rgb;
-              vec3 e=texture(uTexture,uv+vec2(uTexel.x,0.0)).rgb, w=texture(uTexture,uv-vec2(uTexel.x,0.0)).rgb;
+              vec3 n=texture(uTexture,boundedUv(uv+vec2(0.0,uTexel.y))).rgb, s=texture(uTexture,boundedUv(uv-vec2(0.0,uTexel.y))).rgb;
+              vec3 e=texture(uTexture,boundedUv(uv+vec2(uTexel.x,0.0))).rgb, w=texture(uTexture,boundedUv(uv-vec2(uTexel.x,0.0))).rgb;
               vec3 detail=c-(n+s+e+w)*0.25; c+=detail*(uSharpness*0.48+uClarity*0.30);
               c=(c-0.5)*(1.0+uDehaze*0.28)+0.5; l=dot(c,vec3(0.2126,0.7152,0.0722));
               float compressed=mix(l,l/(1.0+max(l-0.62,0.0)*1.6),uHighlightSoftness); c*=compressed/max(l,0.0001);
@@ -360,8 +361,8 @@ private class MonitorRenderer(private val invalidate: () -> Unit) : GLSurfaceVie
               if(uFalseColor)c=falseMap(l);
               if(uZebra && l>0.92 && mod(gl_FragCoord.x+gl_FragCoord.y,12.0)<5.0)c=mix(c,vec3(0.85),0.78);
               if(uPeaking){
-                float lx=dot(texture(uTexture,uv+vec2(uTexel.x,0.0)).rgb-texture(uTexture,uv-vec2(uTexel.x,0.0)).rgb,vec3(0.333));
-                float ly=dot(texture(uTexture,uv+vec2(0.0,uTexel.y)).rgb-texture(uTexture,uv-vec2(0.0,uTexel.y)).rgb,vec3(0.333));
+                float lx=dot(texture(uTexture,boundedUv(uv+vec2(uTexel.x,0.0))).rgb-texture(uTexture,boundedUv(uv-vec2(uTexel.x,0.0))).rgb,vec3(0.333));
+                float ly=dot(texture(uTexture,boundedUv(uv+vec2(0.0,uTexel.y))).rgb-texture(uTexture,boundedUv(uv-vec2(0.0,uTexel.y))).rgb,vec3(0.333));
                 if(length(vec2(lx,ly))>0.10)c=mix(c,vec3(0.78,0.82,0.76),0.88);
               }
               outColor=vec4(c,1.0);

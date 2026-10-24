@@ -45,5 +45,11 @@ class Ucd2ProtocolTest {
         assertTrue(Ucd2FrameScanner().append(bad).isEmpty())
     }
 
+    @Test fun corruptedChecksumNeverReachesDecoder() {
+        val packet=Ucd2Protocol.fileCommand(1,226,20,GimbalProtocol.move(0,0))
+        packet[packet.lastIndex]=(packet.last().toInt() xor 1).toByte()
+        assertTrue(Ucd2FrameScanner().append(packet).isEmpty())
+    }
+
     private fun hex(value: String): ByteArray = value.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }

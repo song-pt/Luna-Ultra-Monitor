@@ -1,0 +1,617 @@
+{
+  "gimbal": [
+    "云台",
+    "Gimbal",
+    "ジンバル"
+  ],
+  "recenter": [
+    "回中",
+    "Center",
+    "中央"
+  ],
+  "flip": [
+    "翻转",
+    "Flip",
+    "反転"
+  ],
+  "gimbalDirections": [
+    "摇杆：上、下、左、右",
+    "Joystick: up, down, left, right",
+    "スティック：上下左右"
+  ],
+  "gimbalRelease": [
+    "松手停止 · 断网时请检查相机",
+    "Release to stop. Check camera if disconnected.",
+    "離すと停止。切断時は本体を確認"
+  ],
+  "color": [
+    "颜色",
+    "Color",
+    "カラー"
+  ],
+  "lut": [
+    "LUT",
+    "LUT",
+    "LUT"
+  ],
+  "exposure": [
+    "曝光",
+    "Exposure",
+    "露出"
+  ],
+  "focus": [
+    "对焦",
+    "Focus",
+    "フォーカス"
+  ],
+  "composition": [
+    "构图",
+    "Frame",
+    "構図"
+  ],
+  "display": [
+    "显示",
+    "Display",
+    "表示"
+  ],
+  "parameters": [
+    "参数",
+    "Format",
+    "設定"
+  ],
+  "camera": [
+    "相机",
+    "Camera",
+    "カメラ"
+  ],
+  "collapse": [
+    "收起",
+    "Collapse",
+    "閉じる"
+  ],
+  "connectTitle": [
+    "连接 Luna Ultra 开始监看",
+    "Connect Luna Ultra to monitor",
+    "Luna Ultra に接続してモニター"
+  ],
+  "wifiHint": [
+    "请先在系统设置连接相机 Wi-Fi",
+    "Connect to the camera Wi-Fi in system settings first",
+    "先にシステム設定でカメラ Wi-Fi に接続してください"
+  ],
+  "connecting": [
+    "连接中…",
+    "Connecting…",
+    "接続中…"
+  ],
+  "connect": [
+    "连接相机",
+    "Connect camera",
+    "カメラに接続"
+  ],
+  "language": [
+    "语言",
+    "Language",
+    "言語"
+  ],
+  "cleanExit": [
+    "纯净模式 · 点击退出",
+    "Clean view · Tap to exit",
+    "クリーン表示・タップで終了"
+  ],
+  "colorTitle": [
+    "标准画面调色",
+    "Manual color preview",
+    "手動カラープレビュー"
+  ],
+  "colorSubtitle": [
+    "只改变监看，不影响相机素材",
+    "Preview only; camera files are unchanged",
+    "プレビューのみ。カメラ素材は変更しません"
+  ],
+  "lutTitle": [
+    "双 LUT 预览",
+    "Dual LUT preview",
+    "デュアル LUT プレビュー"
+  ],
+  "lutSubtitle": [
+    "还原 LUT → 风格 LUT，可单独使用任意一个",
+    "Recovery LUT → Look LUT; either slot can be used alone",
+    "変換 LUT → ルック LUT。片方だけでも使用可能"
+  ],
+  "exposureTitle": [
+    "曝光辅助",
+    "Exposure tools",
+    "露出アシスト"
+  ],
+  "exposureSubtitle": [
+    "按需启用，不遮挡主要画面",
+    "Enable only the tools you need",
+    "必要なツールだけ有効にします"
+  ],
+  "focusTitle": [
+    "对焦辅助",
+    "Focus tools",
+    "フォーカスアシスト"
+  ],
+  "focusSubtitle": [
+    "确认清晰区域",
+    "Confirm sharp areas",
+    "合焦領域を確認"
+  ],
+  "compositionTitle": [
+    "构图辅助",
+    "Composition guides",
+    "構図ガイド"
+  ],
+  "compositionSubtitle": [
+    "辅助线以有效画面为基准",
+    "Guides follow the visible image area",
+    "ガイドは有効映像領域に合わせます"
+  ],
+  "displayTitle": [
+    "画面显示",
+    "Image display",
+    "映像表示"
+  ],
+  "displaySubtitle": [
+    "默认保持原比例",
+    "Aspect ratio is preserved by default",
+    "既定では縦横比を維持します"
+  ],
+  "parametersTitle": [
+    "视频参数",
+    "Video format",
+    "動画設定"
+  ],
+  "parametersSubtitle": [
+    "左侧选择画质，右侧仅显示支持的帧率",
+    "Choose resolution on the left; supported frame rates appear on the right",
+    "左で解像度を選択し、右に対応フレームレートのみ表示"
+  ],
+  "recoveryLut": [
+    "还原 LUT",
+    "Recovery LUT",
+    "変換 LUT"
+  ],
+  "styleLut": [
+    "风格 LUT",
+    "Look LUT",
+    "ルック LUT"
+  ],
+  "selectCube": [
+    "选择 .cube",
+    "Choose .cube",
+    ".cube を選択"
+  ],
+  "clear": [
+    "清除",
+    "Clear",
+    "削除"
+  ],
+  "none": [
+    "未加载",
+    "Not loaded",
+    "未読込"
+  ],
+  "lutOrder": [
+    "处理顺序：还原 LUT → 风格 LUT → 手动调色",
+    "Order: Recovery LUT → Look LUT → manual adjustments",
+    "処理順：変換 LUT → ルック LUT → 手動調整"
+  ],
+  "zebra": [
+    "斑马纹",
+    "Zebras",
+    "ゼブラ"
+  ],
+  "falseColor": [
+    "假色",
+    "False color",
+    "フォルスカラー"
+  ],
+  "peaking": [
+    "峰值对焦",
+    "Focus peaking",
+    "ピーキング"
+  ],
+  "thirds": [
+    "三分线",
+    "Rule of thirds",
+    "三分割"
+  ],
+  "centerMark": [
+    "中心标记",
+    "Center mark",
+    "センターマーク"
+  ],
+  "safeArea": [
+    "90% 安全框",
+    "90% safe area",
+    "90% セーフエリア"
+  ],
+  "lineWidth": [
+    "线宽",
+    "Width",
+    "線幅"
+  ],
+  "opacity": [
+    "不透明度",
+    "Opacity",
+    "不透明度"
+  ],
+  "centerSize": [
+    "中心大小",
+    "Center size",
+    "中心サイズ"
+  ],
+  "fit": [
+    "完整显示 · 无变形",
+    "Fit · no distortion",
+    "全体表示・歪みなし"
+  ],
+  "cropFill": [
+    "裁切填满 · 无变形",
+    "Crop to fill · no distortion",
+    "クロップ・歪みなし"
+  ],
+  "stretch": [
+    "拉伸填满 · 有变形",
+    "Stretch to fill · distorted",
+    "引き伸ばし・歪みあり"
+  ],
+  "pixel": [
+    "1:1 像素检查",
+    "1:1 pixel check",
+    "1:1 ピクセル確認"
+  ],
+  "clean": [
+    "纯净画面",
+    "Clean view",
+    "クリーン表示"
+  ],
+  "resolution": [
+    "画质",
+    "Resolution",
+    "解像度"
+  ],
+  "frameRate": [
+    "帧率",
+    "Frame rate",
+    "フレームレート"
+  ],
+  "cameraColorMode": [
+    "相机色彩模式",
+    "Camera color mode",
+    "カメラカラーモード"
+  ],
+  "cameraColorStandard": [
+    "标准",
+    "Standard",
+    "標準"
+  ],
+  "cameraColorDolby": [
+    "杜比视界",
+    "Dolby Vision",
+    "Dolby Vision"
+  ],
+  "cameraColorILog": [
+    "I-Log",
+    "I-Log",
+    "I-Log"
+  ],
+  "cameraColorVideoOnly": [
+    "仅在未录制的视频模式下可调整",
+    "Available only in video mode while not recording",
+    "動画モードで録画停止中のみ変更できます"
+  ],
+  "applyReadback": [
+    "选择后写入相机并回读确认",
+    "Applied to camera and verified by read-back",
+    "カメラへ適用後、読戻しで確認"
+  ],
+  "cameraControl": [
+    "相机控制",
+    "Camera control",
+    "カメラ操作"
+  ],
+  "photoMode": [
+    "拍照模式",
+    "Photo mode",
+    "写真モード"
+  ],
+  "videoMode": [
+    "视频模式",
+    "Video mode",
+    "動画モード"
+  ],
+  "detectingMode": [
+    "正在识别模式",
+    "Detecting mode",
+    "モード検出中"
+  ],
+  "takePhoto": [
+    "拍照",
+    "Take photo",
+    "撮影"
+  ],
+  "startRecord": [
+    "开始录制",
+    "Start recording",
+    "録画開始"
+  ],
+  "stopRecord": [
+    "结束录制",
+    "Stop recording",
+    "録画停止"
+  ],
+  "readMode": [
+    "读取模式",
+    "Read mode",
+    "モード読込"
+  ],
+  "switchVideo": [
+    "切换视频",
+    "Switch to video",
+    "動画へ切替"
+  ],
+  "switchPhoto": [
+    "切换拍照",
+    "Switch to photo",
+    "写真へ切替"
+  ],
+  "redetect": [
+    "重新识别",
+    "Detect again",
+    "再検出"
+  ],
+  "disconnect": [
+    "断开",
+    "Disconnect",
+    "切断"
+  ],
+  "dragHint": [
+    "手动收回后可拖到另一侧",
+    "Collapse, then drag to the other side",
+    "閉じてから反対側へドラッグ"
+  ],
+  "agree": [
+    "同意",
+    "Accept",
+    "同意"
+  ],
+  "keep": [
+    "保持当前",
+    "Keep current",
+    "現状維持"
+  ],
+  "close": [
+    "关闭",
+    "Close",
+    "閉じる"
+  ],
+  "adjustExposure": [
+    "曝光",
+    "Exposure",
+    "露出"
+  ],
+  "brightness": [
+    "亮度",
+    "Brightness",
+    "明るさ"
+  ],
+  "contrast": [
+    "对比度",
+    "Contrast",
+    "コントラスト"
+  ],
+  "highlights": [
+    "高光",
+    "Highlights",
+    "ハイライト"
+  ],
+  "shadows": [
+    "阴影",
+    "Shadows",
+    "シャドウ"
+  ],
+  "whites": [
+    "白色",
+    "Whites",
+    "白レベル"
+  ],
+  "blacks": [
+    "黑色",
+    "Blacks",
+    "黒レベル"
+  ],
+  "temperature": [
+    "色温",
+    "Temperature",
+    "色温度"
+  ],
+  "tint": [
+    "色调",
+    "Tint",
+    "色かぶり"
+  ],
+  "saturation": [
+    "饱和度",
+    "Saturation",
+    "彩度"
+  ],
+  "vibrance": [
+    "自然饱和度",
+    "Vibrance",
+    "自然な彩度"
+  ],
+  "sharpness": [
+    "锐度",
+    "Sharpness",
+    "シャープネス"
+  ],
+  "midtones": [
+    "中间调",
+    "Midtones",
+    "中間調"
+  ],
+  "gamma": [
+    "Gamma",
+    "Gamma",
+    "ガンマ"
+  ],
+  "hue": [
+    "色相",
+    "Hue",
+    "色相"
+  ],
+  "fade": [
+    "淡化",
+    "Fade",
+    "フェード"
+  ],
+  "clarity": [
+    "清晰度",
+    "Clarity",
+    "明瞭度"
+  ],
+  "dehaze": [
+    "去雾",
+    "Dehaze",
+    "かすみ除去"
+  ],
+  "softHighlights": [
+    "高光柔化",
+    "Highlight softness",
+    "ハイライト柔化"
+  ],
+  "vignette": [
+    "暗角",
+    "Vignette",
+    "周辺減光"
+  ],
+  "云台控制": [
+    "云台控制",
+    "Gimbal control",
+    "ジンバル操作"
+  ],
+  "未连接": [
+    "未连接",
+    "Disconnected",
+    "未接続"
+  ],
+  "实时监看": [
+    "实时监看",
+    "Live monitor",
+    "ライブモニター"
+  ],
+  "正在连接 Luna Ultra": [
+    "正在连接 Luna Ultra",
+    "Connecting to Luna Ultra",
+    "Luna Ultra に接続中"
+  ],
+  "正在建立图传会话": [
+    "正在建立图传会话",
+    "Starting live-view session",
+    "ライブビューを開始中"
+  ],
+  "已连接，等待实时画面": [
+    "已连接，等待实时画面",
+    "Connected; waiting for video",
+    "接続済み・映像待機中"
+  ],
+  "照片已拍摄": [
+    "照片已拍摄",
+    "Photo captured",
+    "写真を撮影しました"
+  ],
+  "相机正在录制": [
+    "相机正在录制",
+    "Camera is recording",
+    "録画中"
+  ],
+  "录制已结束": [
+    "录制已结束",
+    "Recording stopped",
+    "録画を停止しました"
+  ],
+  "拍照模式": [
+    "拍照模式",
+    "Photo mode",
+    "写真モード"
+  ],
+  "视频模式": [
+    "视频模式",
+    "Video mode",
+    "動画モード"
+  ],
+  "色彩模式仅可在未录制的视频模式下设置": [
+    "色彩模式仅可在未录制的视频模式下设置",
+    "Color mode is available only in video mode while not recording",
+    "カラーモードは動画モードで録画停止中のみ設定できます"
+  ],
+  "3D LUT size must be between 2 and 65": [
+    "3D LUT 尺寸必须在 2 到 65 之间",
+    "3D LUT size must be between 2 and 65",
+    "3D LUT サイズは 2〜65 にしてください"
+  ],
+  "检测中": [
+    "检测中",
+    "Detecting",
+    "検出中"
+  ],
+  "设备温度较高，是否降低示波器刷新率以保持流畅？": [
+    "设备温度较高，是否降低示波器刷新率以保持流畅？",
+    "Device temperature is high. Reduce scope refresh rate?",
+    "端末温度が高いです。スコープ更新頻度を下げますか？"
+  ],
+  "waiting": [
+    "已连接，等待画面",
+    "Connected; waiting for video",
+    "接続済み・映像待ち"
+  ],
+  "failed": [
+    "操作失败",
+    "Operation failed",
+    "操作失敗"
+  ],
+  "confirmed": [
+    "相机已确认",
+    "Confirmed by camera",
+    "カメラ確認済み"
+  ],
+  "scrollMore": [
+    "下滑查看更多",
+    "Scroll for more",
+    "スクロールして続きを表示"
+  ],
+  "openSettings": [
+    "系统设置",
+    "Settings",
+    "設定"
+  ],
+  "sideloadNote": [
+    "请先连接相机 Wi-Fi，并允许本地网络访问",
+    "Join camera Wi-Fi first and allow Local Network access",
+    "カメラWi-Fiに接続しローカルネットワークを許可"
+  ],
+  "thermal": [
+    "温度较高。是否关闭辅助显示以减少负载？",
+    "High temperature. Turn off assists to reduce load?",
+    "高温です。負荷を下げるため補助表示を無効にしますか？"
+  ],
+  "图传连接已中断": [
+    "图传连接已中断",
+    "Camera connection lost",
+    "カメラ接続が切断されました"
+  ],
+  "decodeMS": [
+    "解码 %.0f ms",
+    "Decode %.0f ms",
+    "デコード %.0f ms"
+  ],
+  "gimbalFirmware": [
+    "尚未识别支持的固件，请重新连接",
+    "Supported firmware not identified; reconnect",
+    "対応ファームウェア未確認。再接続してください"
+  ]
+}

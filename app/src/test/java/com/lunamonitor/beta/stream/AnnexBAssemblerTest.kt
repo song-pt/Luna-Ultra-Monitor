@@ -51,6 +51,18 @@ class AnnexBAssemblerTest {
         assertTrue(result[0].keyFrame)
     }
 
+    @Test fun completedMediaPacketDoesNotWaitForTheNextPicture() {
+        val assembler=AnnexBAssembler()
+        val result=assembler.appendMediaPacket(annexB(
+            byteArrayOf(0x40,1,0x0c),byteArrayOf(0x42,1,1,2),byteArrayOf(0x44,1,3),
+            byteArrayOf(0x26,1,0x80.toByte(),4)))
+        assertEquals(1,result.size)
+        assertTrue(result.single().keyFrame)
+        val next=assembler.appendMediaPacket(annexB(byteArrayOf(2,1,0x80.toByte(),5)))
+        assertEquals(1,next.size)
+        assertTrue(!next.single().keyFrame)
+    }
+
     private fun annexB(vararg units: ByteArray): ByteArray {
         val start = byteArrayOf(0, 0, 0, 1)
         return units.fold(ByteArray(0)) { all, unit -> all + start + unit }

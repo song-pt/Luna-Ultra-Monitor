@@ -11,6 +11,9 @@ data class CaptureStatus(val state: Int, val captureTimeSeconds: Int) {
 }
 
 object CameraControlProtocol {
+    fun parseFirmware(body: ByteArray): String? = ProtoReader(body).lengthDelimited(2)
+        ?.let { ProtoReader(it).lengthDelimited(30)?.toString(Charsets.UTF_8) }
+
     const val ZOOM_SCALE = 53
     const val COLOR_MODE = 35
     const val NORMAL_VIDEO_MODE = 7
